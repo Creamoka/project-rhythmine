@@ -5,13 +5,13 @@ import java.awt.*;
 
 class SongSelectionMenu extends JFrame {
     public SongSelectionMenu() {
-        setTitle("Pilih Lagu");
+        setTitle("Song Selection");
         setSize(400, 300);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(3, 1, 10, 10));
+        panel.setLayout(new GridLayout(5, 1, 5, 5));
 
         JButton song1Button = new JButton("Song 1");
         JButton song2Button = new JButton("Song 2");
@@ -26,7 +26,22 @@ class SongSelectionMenu extends JFrame {
         });
 
         song2Button.addActionListener(e -> {
-            new Gameplay("Lagu 2");
+            new Gameplay("Song 2");
+            dispose();
+        });
+
+        song2Button.addActionListener(e -> {
+            new Gameplay("Song 3");
+            dispose();
+        });
+
+        song2Button.addActionListener(e -> {
+            new Gameplay("Song 4");
+            dispose();
+        });
+
+        song2Button.addActionListener(e -> {
+            new Gameplay("Song 5");
             dispose();
         });
 
@@ -37,6 +52,9 @@ class SongSelectionMenu extends JFrame {
 
         panel.add(song1Button);
         panel.add(song2Button);
+        panel.add(song3Button);
+        panel.add(song4Button);
+        panel.add(song5Button);
         panel.add(backButton);
 
         add(panel);

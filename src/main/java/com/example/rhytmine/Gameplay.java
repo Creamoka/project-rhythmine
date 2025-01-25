@@ -18,6 +18,10 @@ class Gameplay extends JPanel {
         frame.add(this);
         frame.setLocationRelativeTo(null);
 
+        // Make the frame fullscreen
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        frame.setUndecorated(true);
+    
         setFocusable(true);
         addKeyListener(new KeyAdapter() {
             @Override
@@ -28,6 +32,9 @@ class Gameplay extends JPanel {
 
         spawnNotes();
         startGameLoop();
+
+        // Stop the game after 10 seconds
+        new Timer(5000, e -> endGame()).start();
 
         frame.setVisible(true);
     }
@@ -50,6 +57,11 @@ class Gameplay extends JPanel {
         for (Note note : notes) {
             note.y += 5; // Move notes downward
         }
+    }
+
+    private void endGame() {
+        gameTimer.stop();
+        new ScoreResult(score).setVisible(true);
     }
 
     private void handleKeyPress(int keyCode) {
