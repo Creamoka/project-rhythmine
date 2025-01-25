@@ -13,8 +13,8 @@ class ScoreResult extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
 
-        JLabel scoreLabel = new JLabel("Skor Anda: " + score, SwingConstants.CENTER);
-        JButton backButton = new JButton("Kembali ke Menu Utama");
+        JLabel scoreLabel = new JLabel("Score : " + score, SwingConstants.CENTER);
+        JButton backButton = new JButton("Back to Main Menu");
 
         backButton.addActionListener(e -> {
             new MainMenu();

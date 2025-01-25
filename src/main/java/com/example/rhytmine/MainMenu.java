@@ -12,8 +12,11 @@ public class MainMenu extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
+        this.setExtendedState(Frame.MAXIMIZED_BOTH);
+        this.setUndecorated(true);
+
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(3, 1, 10, 10));
+        panel.setLayout(new GridLayout(5, 1, 10, 10));
 
         JButton playButton = new JButton("Play");
         JButton settingsButton = new JButton("Option");
