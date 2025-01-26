@@ -5,23 +5,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OsuParser {
-    public static class Note {
-        public int column;
-        public int time;
-        public boolean isLong;
-
-        public Note(int column, int time, boolean isLong) {
-            this.column = column;
-            this.time = time;
-            this.isLong = isLong;
-        }
-    }
-
-    public static List<Note> parseOsuFile(String filePath) {
-        List<Note> notes = new ArrayList<>();
+    public static List<Gameplay.Note> parseOsuFile(String filePath) {
+        List<Gameplay.Note> notes = new ArrayList<>();
         boolean isHitObjects = false;
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            System.err.println("File not found: " + filePath);
+            return notes;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
 
             while ((line = reader.readLine()) != null) {
@@ -30,28 +24,25 @@ public class OsuParser {
                     continue;
                 }
 
-                if (isHitObjects) {
-                    // Mengabaikan baris kosong atau komentar
-                    if (line.trim().isEmpty() || line.startsWith("//")) {
-                        continue;
-                    }
+                if (!isHitObjects || line.trim().isEmpty() || line.startsWith("//")) {
+                    continue;
+                }
 
-                    String[] parts = line.split(",");
-                    if (parts.length < 5) {
-                        continue; // Mengabaikan baris yang tidak lengkap
-                    }
+                String[] parts = line.split(",");
+                if (parts.length < 5) {
+                    continue;
+                }
 
-                    try {
-                        int column = Integer.parseInt(parts[0]) % 4; // Asumsi 4 kolom
-                        int time = Integer.parseInt(parts[2]);
-                        boolean isLong = parts.length > 5; // Jika ada kolom lebih dari 5, berarti objek panjang (slider)
+                try {
+                    int xPosition = Integer.parseInt(parts[0]);
+                    int column = (xPosition % 512) / (512 / 4);
+                    int time = Integer.parseInt(parts[2]);
+                    boolean isLong = parts.length > 5 && !parts[5].trim().isEmpty();
 
-                        // Menambahkan note ke dalam list
-                        notes.add(new Note(column, time, isLong));
-                    } catch (NumberFormatException e) {
-                        // Jika ada kesalahan dalam parsing angka, lewati baris tersebut
-                        e.printStackTrace();
-                    }
+                    notes.add(new Gameplay.Note(column, time, isLong));
+                } catch (NumberFormatException e) {
+                    System.err.println("Error parsing line: " + line);
+                    e.printStackTrace();
                 }
             }
         } catch (IOException e) {
