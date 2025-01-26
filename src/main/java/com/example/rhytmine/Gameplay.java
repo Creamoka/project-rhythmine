@@ -1,17 +1,20 @@
 package com.example.rhytmine;
 
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 class Gameplay extends JPanel {
     private Timer gameTimer;
     private ArrayList<Note> notes = new ArrayList<>();
     private int score = 0;
+    private long startTime;
+    private Clip audioClip;
 
-    public Gameplay(String songName) {
+    public Gameplay(String songName, ArrayList<Note> beatmapNotes, String audioPath) {
         JFrame frame = new JFrame("Gameplay - " + songName);
         frame.setSize(600, 800);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -21,31 +24,24 @@ class Gameplay extends JPanel {
         // Make the frame fullscreen
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setUndecorated(true);
-    
+
+        this.notes = beatmapNotes;
         setFocusable(true);
-        addKeyListener(new KeyAdapter() {
+        addKeyListener(new java.awt.event.KeyAdapter() {
             @Override
-            public void keyPressed(KeyEvent e) {
+            public void keyPressed(java.awt.event.KeyEvent e) {
                 handleKeyPress(e.getKeyCode());
             }
         });
 
-        spawnNotes();
         startGameLoop();
-
-        // Stop the game after 10 seconds
-        new Timer(5000, e -> endGame()).start();
+        playAudio(audioPath);
 
         frame.setVisible(true);
     }
 
-    private void spawnNotes() {
-        // Add single and long notes
-        notes.add(new Note(0, 0, false)); // Single note in column 0
-        notes.add(new Note(2, 200, true)); // Long note in column 2
-    }
-
     private void startGameLoop() {
+        startTime = System.currentTimeMillis();
         gameTimer = new Timer(16, e -> {
             updateNotes();
             repaint();
@@ -54,39 +50,52 @@ class Gameplay extends JPanel {
     }
 
     private void updateNotes() {
+        long currentTime = System.currentTimeMillis() - startTime;
         for (Note note : notes) {
-            note.y += 5; // Move notes downward
+            if (!note.isHit && note.time <= currentTime) {
+                note.y += 5; // Move notes downward
+                if (note.y > getHeight()) {
+                    // If note goes off screen, reset its position
+                    note.y = -200;
+                    note.isHit = true; // Consider it missed
+                }
+            }
         }
     }
 
-    private void endGame() {
-        gameTimer.stop();
-        new ScoreResult(score).setVisible(true);
-    }
-
     private void handleKeyPress(int keyCode) {
-        // Map keys to columns (e.g., W, E, I, O)
         int column = switch (keyCode) {
-            case KeyEvent.VK_W -> 0;
-            case KeyEvent.VK_E -> 1;
-            case KeyEvent.VK_I -> 2;
-            case KeyEvent.VK_O -> 3;
+            case java.awt.event.KeyEvent.VK_W -> 0;
+            case java.awt.event.KeyEvent.VK_E -> 1;
+            case java.awt.event.KeyEvent.VK_I -> 2;
+            case java.awt.event.KeyEvent.VK_O -> 3;
             default -> -1;
         };
 
         if (column != -1) {
             for (Note note : notes) {
-                if (note.column == column && Math.abs(note.y - 700) < 50) { // Assume 700 is hit line
-                    if (note.isLong) {
-                        score += 200; // Long note score
-                    } else {
-                        score += 100; // Single note score
-                    }
-                    notes.remove(note);
+                if (!note.isHit && note.column == column && Math.abs(note.y - 700) < 50) {
+                    score += note.isLong ? 200 : 100;
+                    note.isHit = true;
                     break;
                 }
             }
         }
+    }
+
+    private void playAudio(String audioPath) {
+        new Thread(() -> {
+            try {
+                File audioFile = new File(audioPath);
+                AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
+                audioClip = AudioSystem.getClip();
+                audioClip.open(audioStream);
+                audioClip.start();
+                audioClip.loop(Clip.LOOP_CONTINUOUSLY); // Loop the audio
+            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     @Override
@@ -101,8 +110,10 @@ class Gameplay extends JPanel {
 
         // Draw notes
         for (Note note : notes) {
-            g.setColor(note.isLong ? Color.GREEN : Color.BLUE);
-            g.fillRect(note.column * 150, note.y, 100, note.isLong ? 200 : 50);
+            if (!note.isHit) {
+                g.setColor(note.isLong ? Color.GREEN : Color.BLUE);
+                g.fillRect(note.column * 150, note.y, 100, note.isLong ? 200 : 50);
+            }
         }
 
         // Draw score
@@ -112,12 +123,14 @@ class Gameplay extends JPanel {
 }
 
 class Note {
-    int column, y;
-    boolean isLong;
+    int column, y, time;
+    boolean isLong, isHit;
 
-    public Note(int column, int y, boolean isLong) {
+    public Note(int column, int time, boolean isLong) {
         this.column = column;
-        this.y = y;
+        this.time = time;
         this.isLong = isLong;
+        this.y = -200; // Start off-screen
+        this.isHit = false;
     }
 }
