@@ -1,10 +1,18 @@
 package com.example.rhytmine;
 
-import javax.sound.sampled.*;
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.List;
+
+import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.Timer;
 
 class Gameplay extends JPanel {
     private Timer gameTimer;
@@ -13,8 +21,21 @@ class Gameplay extends JPanel {
     private long startTime;
     private Clip audioClip;
 
+    private BufferedImage noteSkin;
+
+    private static final int COLUMN_WIDTH = 100;
+    private static final int NUM_COLUMNS = 4;
+    private static final int GAMEPLAY_WIDTH = COLUMN_WIDTH * NUM_COLUMNS;
+    private int gameplayXOffset;
+
     public Gameplay(String songName, List<Note> beatmapNotes, String audioPath) {
         this.notes = beatmapNotes;
+
+        try {
+            noteSkin = ImageIO.read(new File("src\\main\\resources\\note\\mania-note1.png"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         JFrame frame = new JFrame("Gameplay - " + songName);
         frame.setSize(600, 800);
@@ -24,6 +45,8 @@ class Gameplay extends JPanel {
 
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setUndecorated(true);
+
+        gameplayXOffset = (frame.getWidth() - GAMEPLAY_WIDTH) / 2;
 
         setFocusable(true);
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -40,7 +63,6 @@ class Gameplay extends JPanel {
     }
 
     private void startGameLoop() {
-        startTime = System.currentTimeMillis();
         gameTimer = new Timer(16, e -> {
             updateNotes();
             repaint();
@@ -49,12 +71,16 @@ class Gameplay extends JPanel {
     }
 
     private void updateNotes() {
-        long currentTime = System.currentTimeMillis() - startTime;
+        if (audioClip == null) return;
+
+        long audioTime = audioClip.getMicrosecondPosition() / 1000;
         for (Note note : notes) {
-            if (!note.isHit && note.time <= currentTime) {
-                note.y += 5; // Move notes downward
+            if (!note.isHit) {
+                long deltaTime = note.time - audioTime;
+                note.y = 700 - (int) (deltaTime * 0.5);
+
                 if (note.y > getHeight()) {
-                    note.isHit = true; // Mark as missed
+                    note.isHit = true; // Tandai sebagai miss
                 }
             }
         }
@@ -72,7 +98,7 @@ class Gameplay extends JPanel {
         if (column != -1) {
             for (Note note : notes) {
                 if (!note.isHit && note.column == column && Math.abs(note.y - 700) < 50) {
-                    score += note.isLong ? 200 : 100;
+                    score += 100;
                     note.isHit = true;
                     break;
                 }
@@ -106,12 +132,12 @@ class Gameplay extends JPanel {
         g.fillRect(0, 0, getWidth(), getHeight());
 
         g.setColor(Color.WHITE);
-        g.fillRect(0, 700, getWidth(), 5);
+        g.fillRect(gameplayXOffset, 700, GAMEPLAY_WIDTH, 5);
 
         for (Note note : notes) {
             if (!note.isHit) {
-                g.setColor(note.isLong ? Color.GREEN : Color.BLUE);
-                g.fillRect(note.column * 150, note.y, 100, note.isLong ? 200 : 50);
+                int x = gameplayXOffset + note.column * COLUMN_WIDTH;
+                g.drawImage(noteSkin, x, note.y, COLUMN_WIDTH, 50, null);
             }
         }
 
@@ -121,12 +147,11 @@ class Gameplay extends JPanel {
 
     static class Note {
         int column, y, time;
-        boolean isLong, isHit;
+        boolean isHit;
 
-        public Note(int column, int time, boolean isLong) {
+        public Note(int column, int time) {
             this.column = column;
             this.time = time;
-            this.isLong = isLong;
             this.y = -200;
             this.isHit = false;
         }

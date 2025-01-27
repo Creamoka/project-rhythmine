@@ -1,6 +1,9 @@
 package com.example.rhytmine;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,11 +38,10 @@ public class OsuParser {
 
                 try {
                     int xPosition = Integer.parseInt(parts[0]);
-                    int column = (xPosition % 512) / (512 / 4);
+                    int column = (xPosition % 512) / (512 / 4); // Konversi posisi x ke kolom
                     int time = Integer.parseInt(parts[2]);
-                    boolean isLong = parts.length > 5 && !parts[5].trim().isEmpty();
 
-                    notes.add(new Gameplay.Note(column, time, isLong));
+                    notes.add(new Gameplay.Note(column, time));
                 } catch (NumberFormatException e) {
                     System.err.println("Error parsing line: " + line);
                     e.printStackTrace();
@@ -50,5 +52,23 @@ public class OsuParser {
         }
 
         return notes;
+    }
+
+    public static int parseOffset(String filePath) {
+        int offset = 0;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("Offset:")) {
+                    offset = Integer.parseInt(line.split(":")[1].trim());
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return offset;
     }
 }
